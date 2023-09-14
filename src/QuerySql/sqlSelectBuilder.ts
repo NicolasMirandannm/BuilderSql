@@ -1,9 +1,11 @@
-import SqlSelect, {Operador} from "./sqlScript";
+import SqlSelect, {Operador, OrderEnum} from "./sqlScript";
 
 export default class SqlSelectBuilder {
     private parametros_select: string[] = [];
     private fromEntity: string = ' from ';
-    private clausulaWhere: [{ parametro: string; operador: Operador; valor: string | number; }] | undefined;
+    // private clausulaWhere: [{ parametro: string; operador: Operador; valor: string | number; }] | undefined;
+    private clausulaWhere: [{ parametro: string; operador: Operador; valor: string; }] | undefined;
+
     private where: string | undefined;
     private group_by: string | undefined;
     private order_by: string | undefined;
@@ -28,7 +30,7 @@ export default class SqlSelectBuilder {
     }
 
     public from(entidade: string): SqlSelectBuilder {
-        this.fromEntity.concat(` ${entidade} `);
+        this.fromEntity += ` ${entidade} `;
         return this;
     }
 
@@ -38,10 +40,11 @@ export default class SqlSelectBuilder {
     }
 
     public and(parametro: string, operador: Operador, valor: string | number): SqlSelectBuilder {
+        const valorEmString = typeof valor == "string" ? `'${valor}'` : valor.toString();
         if (!this.clausulaWhere)
-            this.clausulaWhere = [{parametro, operador, valor}]
+            this.clausulaWhere = [{parametro, operador, valor: valorEmString}]
         else
-            this.clausulaWhere.push({parametro, operador, valor});
+            this.clausulaWhere.push({parametro, operador, valor: valorEmString});
         return this;
     }
 
@@ -50,8 +53,8 @@ export default class SqlSelectBuilder {
         return this;
     }
 
-    public orderBy(ordem: string[]): SqlSelectBuilder {
-        this.order_by = ` order by ${ordem.join(', ')} `;
+    public orderBy(ordem: string[], direcao?: OrderEnum): SqlSelectBuilder {
+        this.order_by = ` order by ${ordem.join(', ')} ${direcao ? direcao : OrderEnum.crescente}`;
         return this;
     }
 
@@ -63,7 +66,7 @@ export default class SqlSelectBuilder {
             throw new Error('sem clausula where')
         }
 
-        if(this.clausulaWhere != null) {
+        if (this.clausulaWhere != null) {
             const clausulaWhere = this.clausulaWhere.map(({parametro, operador, valor}) => {
                 if (operador === Operador.diferente) {
                     return ` and not ${parametro} = ${valor} `;
@@ -75,10 +78,12 @@ export default class SqlSelectBuilder {
                 return ` and ${parametro} ${operador} ${valor}`
             })
 
-            this.where.concat(clausulaWhere.join(' '))
+            this.where = this.where.concat(clausulaWhere.join(' '))
         }
 
         const select = ` select `.concat(this.parametros_select.join(', '))
+
+
         return new SqlSelect(
             select,
             this.fromEntity,

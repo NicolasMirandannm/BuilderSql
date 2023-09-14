@@ -10,8 +10,12 @@ export enum Operador {
 
 }
 
+export enum OrderEnum {
+    crescente='ASC',
+    descrescente='DESC'
+}
+
 export default class SqlSelect {
-    private readonly prisma = new PrismaClient();
     constructor(
         private readonly parametros_select: string,
         private readonly from: string,
@@ -20,39 +24,24 @@ export default class SqlSelect {
         private readonly order_by: string | undefined) {
     }
 
-    public async executar(): Promise<any> {
-        try {
-            const sql = this.montarSql();
-            console.log(sql)
-            return await this.prisma.$queryRaw`${sql}`;
-        }
-        catch (err) {
-            await this.prisma.$disconnect()
-        }
-        finally {
-            await this.prisma.$disconnect()
-        }
+    public montarSql(): string {
 
-    }
-
-    private montarSql(): string {
-
-        const sql: string = "";
+        let sql: string = "";
 
         if (this.parametros_select == null || this.from == null) {
             throw new Error('select invalido');
         }
-        sql.concat(` ${this.parametros_select} ${this.from} `);
+        sql += ` ${this.parametros_select} ${this.from} `;
 
         if (this.where != null) {
-            sql.concat(this.where)
+            sql += this.where
         }
 
         if (this.group_by != null) {
-            sql.concat(this.group_by)
+            sql += this.group_by
         }
         if (this.order_by != null) {
-            sql.concat(this.order_by)
+            sql += this.order_by
         }
         return sql;
     }
